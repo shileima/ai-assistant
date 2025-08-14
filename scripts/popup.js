@@ -40,10 +40,28 @@ class EnvironmentSwitcher {
   setupEventListeners() {
     // 设置按钮
     const settingsBtn = document.getElementById('settingsBtn');
+    const elementPickerBtn = document.getElementById('elementPickerBtn');
     const closeSettingsBtn = document.getElementById('closeSettingsBtn');
     
     settingsBtn?.addEventListener('click', () => this.showSettings());
     closeSettingsBtn?.addEventListener('click', () => this.hideSettings());
+
+    // 元素选择器按钮
+    elementPickerBtn?.addEventListener('click', async () => {
+      try {
+        // 在当前激活标签页开启采集器
+        const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+        if (tab?.id) {
+          await chrome.tabs.sendMessage(tab.id, { action: 'startElementPicker' });
+          this.showMessage('元素选择器已启动，移动鼠标选择元素，按 Space 或 点击确认；ESC 退出。', 'info');
+          // 关闭弹窗，便于在页面上操作
+          setTimeout(() => window.close(), 300);
+        }
+      } catch (error) {
+        console.error('启动元素选择器失败:', error);
+        this.showMessage('启动失败，请刷新页面后重试', 'error');
+      }
+    });
 
     // 设置面板按钮
     const addEnvironmentBtn = document.getElementById('addEnvironmentBtn');
