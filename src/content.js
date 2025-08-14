@@ -263,7 +263,8 @@ const showResultPanel = (element, cssSelector, xpath) => {
     top: 20px;
     right: 20px;
     width: 400px;
-    max-height: 500px;
+    max-height: 600px;
+    min-height: 580px;
     background: white;
     border: 1px solid #ddd;
     border-radius: 8px;
@@ -312,7 +313,7 @@ const showResultPanel = (element, cssSelector, xpath) => {
     </div>
     
     <div style="padding: 16px; border-bottom: 1px solid #eee;">
-      <h4 style="margin: 0 0 12px 0; font-size: 14px; color: #333;">CSS 选择器</h4>
+      <h4 style="margin: 0 0 12px 0; font-size: 14px; color: #666;">CSS 选择器</h4>
       <div style="position: relative;">
         <textarea readonly style="width: 100%; height: 60px; padding: 8px 40px 8px 8px; border: 1px solid #ddd; border-radius: 4px; font-family: monospace; font-size: 12px; resize: none; box-sizing: border-box;">${cssSelector}</textarea>
         <button id="copy-css-btn" style="position: absolute; top: 8px; right: 8px; width: 24px; height: 24px; background: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 12px;">
@@ -324,8 +325,8 @@ const showResultPanel = (element, cssSelector, xpath) => {
       </div>
     </div>
     
-    <div style="padding: 16px; border-bottom: 1px solid #eee;">
-      <h4 style="margin: 0 0 12px 0; font-size: 14px; color: #333;">XPath</h4>
+    <div style="padding: 16px;">
+      <h4 style="margin: 0 0 12px 0; font-size: 14px; color: #666;">XPath</h4>
       <div style="position: relative;">
         <textarea readonly style="width: 100%; height: 60px; padding: 8px 40px 8px 8px; border: 1px solid #ddd; border-radius: 4px; font-family: monospace; font-size: 12px; resize: none; box-sizing: border-box;">${xpath}</textarea>
         <button id="copy-xpath-btn" style="position: absolute; top: 8px; right: 8px; width: 24px; height: 24px; background: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 12px;">
@@ -337,7 +338,8 @@ const showResultPanel = (element, cssSelector, xpath) => {
       </div>
     </div>
     
-    <div style="padding: 16px;">
+    <div style="padding: 16px 16px 20px 16px; margin-top: 30px; border-top: 1px solid #eee">
+      <button id="save-element-btn" style="width: 100%; padding: 8px; background: #28a745; color: white; border: none; border-radius: 4px; cursor: pointer; margin-bottom: 8px;">保存元素</button>
       <button id="restart-picker-btn" style="width: 100%; padding: 8px; background: #17a2b8; color: white; border: none; border-radius: 4px; cursor: pointer; margin-bottom: 8px;">重新采集</button>
       <button onclick="document.getElementById('element-picker-result').remove()" style="width: 100%; padding: 8px; background: #6c757d; color: white; border: none; border-radius: 4px; cursor: pointer;">关闭</button>
     </div>
@@ -349,10 +351,12 @@ const showResultPanel = (element, cssSelector, xpath) => {
   const copyCssBtn = document.getElementById('copy-css-btn');
   const copyXpathBtn = document.getElementById('copy-xpath-btn');
   const restartPickerBtn = document.getElementById('restart-picker-btn');
+  const saveElementBtn = document.getElementById('save-element-btn');
   
   copyCssBtn.addEventListener('click', () => copyToClipboard(cssSelector, copyCssBtn));
   copyXpathBtn.addEventListener('click', () => copyToClipboard(xpath, copyXpathBtn));
   restartPickerBtn.addEventListener('click', () => restartElementPicker());
+  saveElementBtn.addEventListener('click', () => saveElement(element));
 };
 
 // 重新启动元素选择器
@@ -571,6 +575,42 @@ const getEnvironmentColor = (env) => {
     prod: '#dc3545'
   };
   return colors[env] || '#6c757d';
+};
+
+// 保存元素到后台
+const saveElement = async (element) => {
+  if (!element) {
+    showToast('请先选择一个元素');
+    return;
+  }
+
+  const tagName = element.tagName.toLowerCase();
+  const className = element.className || '';
+  const id = element.id || '';
+  const text = element.textContent?.trim() || '';
+  const cssSelector = generateCSSSelector(element);
+  const xpath = generateXPath(element);
+
+  try {
+    const response = await chrome.runtime.sendMessage({
+      action: 'saveElement',
+      tagName: tagName,
+      className: className,
+      id: id,
+      text: text,
+      cssSelector: cssSelector,
+      xpath: xpath
+    });
+
+    if (response.success) {
+      showToast('元素已保存！');
+      // 可以选择刷新页面或更新已保存的元素列表
+    } else {
+      showToast('保存失败: ' + response.message);
+    }
+  } catch (error) {
+    showToast('保存失败: ' + error.message);
+  }
 };
 
 // 页面加载完成后检测当前环境
