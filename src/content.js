@@ -339,9 +339,9 @@ const showResultPanel = (element, cssSelector, xpath) => {
     </div>
     
     <div style="padding: 16px 16px 20px 16px; margin-top: 20px; border-top: 1px solid #eee">
-      <button id="save-element-btn" style="width: 100%; padding: 8px; background: #28a745; color: white; border: none; border-radius: 4px; cursor: pointer; margin-bottom: 8px;">保存元素</button>
-      <button id="restart-picker-btn" style="width: 100%; padding: 8px; background: #17a2b8; color: white; border: none; border-radius: 4px; cursor: pointer; margin-bottom: 8px;">重新采集</button>
-      <button onclick="document.getElementById('element-picker-result').remove()" style="width: 100%; padding: 8px; background: #6c757d; color: white; border: none; border-radius: 4px; cursor: pointer;">关闭</button>
+      <button id="save-element-btn" style="width: 100%; padding: 6px; background: #28a745; color: white; border: none; border-radius: 4px; cursor: pointer; margin-bottom: 8px; font-size: 13px;">保存元素</button>
+      <button id="restart-picker-btn" style="width: 100%; padding: 6px; background: #17a2b8; color: white; border: none; border-radius: 4px; cursor: pointer; margin-bottom: 8px; font-size: 13px;">重新采集</button>
+      <button onclick="document.getElementById('element-picker-result').remove()" style="width: 100%; padding: 6px; background: #6c757d; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 13px;">关闭</button>
     </div>
   `;
   
