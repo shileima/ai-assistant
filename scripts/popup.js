@@ -103,18 +103,25 @@ class EnvironmentSwitcher {
 
     // 生成环境配置
     const environments = {
-      prod: {
-        name: `${domainPrefix.toUpperCase()}生产环境`,
-        baseUrl: domainConfig.prod
+      dev: {
+        name: `${domainPrefix.toUpperCase()}开发环境`,
+        baseUrl: domainConfig.dev
+      },
+      
+      
+      test: {
+        name: `${domainPrefix.toUpperCase()}测试环境`,
+        baseUrl: domainConfig.test
       },
       st: {
         name: `${domainPrefix.toUpperCase()}预发环境`,
         baseUrl: domainConfig.st
       },
-      test: {
-        name: `${domainPrefix.toUpperCase()}测试环境`,
-        baseUrl: domainConfig.test
-      }
+      prod: {
+        name: `${domainPrefix.toUpperCase()}生产环境`,
+        baseUrl: domainConfig.prod
+      },
+      
     };
 
     // 添加环境说明
@@ -188,6 +195,8 @@ class EnvironmentSwitcher {
       return 'test'; // 测试环境
     } else if (currentHostname.endsWith('.sankuai.com') && !currentHostname.includes('.waimai.')) {
       return 'prod'; // 生产环境（不包含waimai的sankuai.com域名）
+    } else if (currentHostname === '127.0.0.1' || currentHostname === 'localhost' || currentHostname.includes('.dev.')) {
+      return 'dev'; // 开发环境
     }
     
     return null;
@@ -289,7 +298,8 @@ class EnvironmentSwitcher {
       const envNames = {
         prod: '生产',
         st: '预发',
-        test: '测试'
+        test: '测试',
+        dev: '开发'
       };
 
       this.showMessage(`已切换到${envNames[targetEnv]}环境`, 'success');
@@ -327,7 +337,8 @@ class EnvironmentSwitcher {
           const envNames = {
             prod: `${domainPrefix.toUpperCase()}生产环境`,
             st: `${domainPrefix.toUpperCase()}预发环境`,
-            test: `${domainPrefix.toUpperCase()}测试环境`
+            test: `${domainPrefix.toUpperCase()}测试环境`,
+            dev: `${domainPrefix.toUpperCase()}开发环境`
           };
           currentEnvElement.textContent = `当前环境: ${envNames[currentFSDEnv]}`;
           currentEnvElement.className = `current-env ${currentFSDEnv}`;
@@ -404,24 +415,9 @@ class EnvironmentSwitcher {
       'xgpt': {
         prod: 'https://bots.sankuai.com',
         st: 'https://xgpt.waimai.st.sankuai.com',
-        test: 'https://xgpt.waimai.test.sankuai.com'
+        test: 'https://xgpt.waimai.test.sankuai.com',
+        dev: 'http://127.0.0.1:8080'
       },
-      'fst': {
-        prod: 'https://fst.sankuai.com',
-        st: 'https://fst.waimai.st.sankuai.com',
-        test: 'https://fst.waimai.test.sankuai.com'
-      },
-      'fsd': {
-        prod: 'https://fsd.sankuai.com',
-        st: 'https://fsd.waimai.st.sankuai.com',
-        test: 'https://fsd.waimai.test.sankuai.com'
-      }
-      // 可以在这里添加更多特殊域名配置
-      // 'other': {
-      //   prod: 'https://other-prod.sankuai.com',
-      //   st: 'https://other.waimai.st.sankuai.com',
-      //   test: 'https://other.waimai.test.sankuai.com'
-      // }
     };
   }
 
@@ -471,7 +467,8 @@ class EnvironmentSwitcher {
     return {
       prod: `https://${domainPrefix}.sankuai.com`,
       st: `https://${domainPrefix}.waimai.st.sankuai.com`,
-      test: `https://${domainPrefix}.waimai.test.sankuai.com`
+      test: `https://${domainPrefix}.waimai.test.sankuai.com`,
+      dev: `http://127.0.0.1:8080`
     };
   }
 
@@ -509,6 +506,11 @@ class EnvironmentSwitcher {
         name: `${domainPrefix.toUpperCase()}测试环境`,
         pattern: 'test',
         baseUrl: domainConfig.test
+      },
+      dev: {
+        name: `${domainPrefix.toUpperCase()}开发环境`,
+        pattern: 'dev',
+        baseUrl: domainConfig.dev
       }
     };
 
