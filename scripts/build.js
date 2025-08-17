@@ -54,7 +54,9 @@ const copyDir = (src, dest) => {
 
 // 主构建函数
 const build = () => {
+  const startTime = Date.now();
   console.log('开始构建Chrome扩展...');
+  console.log(`⏰ 构建开始时间: ${new Date(startTime).toLocaleTimeString()}`);
   
   // 清理dist目录
   if (fs.existsSync('dist')) {
@@ -91,7 +93,10 @@ const build = () => {
     }
   }
   
-  console.log('构建完成！输出目录: dist/');
+  const endTime = Date.now();
+  const buildTime = endTime - startTime;
+  console.log(`✅ 构建完成！输出目录: dist/ (耗时: ${buildTime}ms)`);
+  console.log(`⏰ 构建结束时间: ${new Date(endTime).toLocaleTimeString()}`);
   console.log('可以将dist目录加载到Chrome浏览器中进行测试。');
 };
 

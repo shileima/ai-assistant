@@ -26,12 +26,20 @@ const debouncedBuild = (() => {
     clearTimeout(timeout);
     timeout = setTimeout(() => {
       isBuilding = true;
+      const startTime = Date.now();
       console.log('\n文件变化检测到，重新构建...');
+      console.log(`⏰ 构建开始时间: ${new Date(startTime).toLocaleTimeString()}`);
       try {
         build();
-        console.log('✅ 构建成功');
+        const endTime = Date.now();
+        const buildTime = endTime - startTime;
+        console.log(`✅ 构建成功 (耗时: ${buildTime}ms)`);
+        console.log(`⏰ 构建结束时间: ${new Date(endTime).toLocaleTimeString()}`);
       } catch (error) {
-        console.error('❌ 构建失败:', error.message);
+        const endTime = Date.now();
+        const buildTime = endTime - startTime;
+        console.error(`❌ 构建失败 (耗时: ${buildTime}ms):`, error.message);
+        console.log(`⏰ 构建结束时间: ${new Date(endTime).toLocaleTimeString()}`);
       } finally {
         isBuilding = false;
       }
@@ -73,10 +81,18 @@ const startDev = () => {
   
   // 初始构建
   try {
+    const startTime = Date.now();
+    console.log(`⏰ 初始构建开始时间: ${new Date(startTime).toLocaleTimeString()}`);
     build();
-    console.log('✅ 初始构建完成');
+    const endTime = Date.now();
+    const buildTime = endTime - startTime;
+    console.log(`✅ 初始构建完成 (耗时: ${buildTime}ms)`);
+    console.log(`⏰ 初始构建结束时间: ${new Date(endTime).toLocaleTimeString()}`);
   } catch (error) {
-    console.error('❌ 初始构建失败:', error.message);
+    const endTime = Date.now();
+    const buildTime = endTime - startTime;
+    console.error(`❌ 初始构建失败 (耗时: ${buildTime}ms):`, error.message);
+    console.log(`⏰ 初始构建结束时间: ${new Date(endTime).toLocaleTimeString()}`);
     process.exit(1);
   }
   
