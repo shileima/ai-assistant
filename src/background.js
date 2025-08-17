@@ -37,6 +37,8 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   if (request.action === 'switchEnvironment') {
     
     handleEnvironmentSwitch(request.targetEnv, request.currentUrl);
+  } else if (request.action === 'switchToFSDEnvironment') {
+    handleFSDEnvironmentSwitch(request.targetUrl);
   } else if (request.action === 'getCurrentTab') {
     getCurrentTabInfo().then(sendResponse);
     return true; // 保持消息通道开放
@@ -66,6 +68,19 @@ const handleEnvironmentSwitch = async (targetEnv, currentUrl) => {
     }
   } catch (error) {
     console.error('环境切换失败:', error);
+  }
+};
+
+// 处理FSD环境切换
+const handleFSDEnvironmentSwitch = async (targetUrl) => {
+  try {
+    // 获取当前活动标签页并更新URL
+    const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+    if (tab) {
+      await chrome.tabs.update(tab.id, { url: targetUrl });
+    }
+  } catch (error) {
+    console.error('FSD环境切换失败:', error);
   }
 };
 

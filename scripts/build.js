@@ -10,9 +10,13 @@ const FILES_TO_COPY = [
   'manifest.json',
   'popup.html',
   'src/',
-  'scripts/popup.js',
   'styles/',
   'icons/'
+];
+
+// 需要复制的单独文件
+const FILES_TO_COPY_INDIVIDUALLY = [
+  'scripts/popup.js'
 ];
 
 // 需要复制到根目录的文件
@@ -66,7 +70,7 @@ const build = () => {
   // 创建dist目录
   ensureDir('dist');
   
-  // 复制文件
+  // 复制文件和目录
   for (const item of FILES_TO_COPY) {
     const srcPath = item;
     
@@ -83,6 +87,16 @@ const build = () => {
     } else {
       const destPath = path.join('dist', item);
       copyFile(srcPath, destPath);
+    }
+  }
+
+  // 复制单独的文件
+  for (const file of FILES_TO_COPY_INDIVIDUALLY) {
+    if (fs.existsSync(file)) {
+      const destPath = path.join('dist', file);
+      copyFile(file, destPath);
+    } else {
+      console.warn(`警告: 文件不存在 ${file}`);
     }
   }
   

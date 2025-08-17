@@ -99,6 +99,26 @@ body {
   color: #6c757d;
 }
 
+.current-env.fsd {
+  background: #f3e5f5;
+  color: #7b1fa2;
+}
+
+.current-env.prod {
+  background: #f8d7da;
+  color: #721c24;
+}
+
+.current-env.st {
+  background: #fff3cd;
+  color: #856404;
+}
+
+.current-env.test {
+  background: #d1ecf1;
+  color: #0c5460;
+}
+
 /* 环境按钮样式 */
 .environments {
   padding: 16px;
@@ -176,6 +196,44 @@ body {
   background: #dc3545;
 }
 
+/* FSD环境按钮样式 */
+.fsd-env-description {
+  margin-bottom: 16px;
+  padding: 12px 16px;
+  background: #e3f2fd;
+  border: 1px solid #2196f3;
+  border-radius: 8px;
+  text-align: center;
+}
+
+.fsd-env-info span {
+  font-size: 13px;
+  color: #1976d2;
+  font-weight: 500;
+}
+
+.env-btn.fsd-env-btn {
+  background: #f3e5f5;
+  border-color: #9c27b0;
+}
+
+.env-btn.fsd-env-btn:hover {
+  background: #e1bee7;
+  border-color: #7b1fa2;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(156, 39, 176, 0.2);
+}
+
+.env-btn.fsd-env-btn.active {
+  background: #9c27b0;
+  border-color: #7b1fa2;
+  color: white;
+}
+
+.env-btn.fsd-env-btn.active .env-url {
+  color: rgba(255, 255, 255, 0.8);
+}
+
 /* 设置面板样式 */
 .settings-panel {
   position: absolute;
@@ -232,6 +290,77 @@ body {
   border: 1px solid #e9ecef;
   border-radius: 8px;
   background: #f8f9fa;
+}
+
+/* FSD环境配置样式 */
+.fsd-description {
+  margin-bottom: 20px;
+  padding: 16px;
+  background: #e3f2fd;
+  border: 1px solid #2196f3;
+  border-radius: 8px;
+}
+
+.fsd-info h3 {
+  font-size: 16px;
+  font-weight: 600;
+  color: #1976d2;
+  margin-bottom: 8px;
+}
+
+.fsd-info p {
+  font-size: 14px;
+  color: #1565c0;
+  line-height: 1.4;
+}
+
+.env-config-item.fsd-env {
+  background: #f3e5f5;
+  border-color: #9c27b0;
+}
+
+.env-config-item.fsd-env .env-config-header {
+  border-bottom: 1px solid #e1bee7;
+  padding-bottom: 8px;
+}
+
+.env-status {
+  background: #4caf50;
+  color: white;
+  padding: 2px 8px;
+  border-radius: 12px;
+  font-size: 11px;
+  font-weight: 500;
+}
+
+.fsd-actions {
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px solid #e1bee7;
+}
+
+.switch-fsd-btn {
+  width: 100%;
+  padding: 10px 16px;
+  background: #9c27b0;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.switch-fsd-btn:hover {
+  background: #7b1fa2;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(156, 39, 176, 0.3);
+}
+
+.switch-fsd-btn:active {
+  transform: translateY(0);
+  box-shadow: 0 1px 4px rgba(156, 39, 176, 0.3);
 }
 
 .env-config-header {
