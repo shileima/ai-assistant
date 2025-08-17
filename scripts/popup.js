@@ -133,12 +133,15 @@ class EnvironmentSwitcher {
         ${isSpecial ? `<br><small style="color: #666;">使用特殊域名配置</small>` : ''}
       </div>
     `;
-    container.appendChild(description);
+    // container.appendChild(description);
 
-    // 渲染环境按钮
-    Object.entries(environments).forEach(([key, env]) => {
-      const button = this.createFSDEnvironmentButton(key, env);
-      container.appendChild(button);
+    // 渲染环境按钮（按指定顺序：dev、test、st、prod）
+    const environmentOrder = ['dev', 'test', 'st', 'prod'];
+    environmentOrder.forEach(key => {
+      if (environments[key]) {
+        const button = this.createFSDEnvironmentButton(key, environments[key]);
+        container.appendChild(button);
+      }
     });
   }
 
