@@ -92,48 +92,57 @@ class EnvironmentSwitcher {
     }
   }
 
-  // 渲染FSD环境按钮
+  // 渲染环境切换按钮
   renderFSDEnvironmentButtons(container) {
-    const fsdEnvironments = {
+    const domainPrefix = this.getDomainPrefix();
+    if (!domainPrefix) return;
+
+    // 获取域名配置（自动处理特殊和标准域名）
+    const domainConfig = this.getDomainConfig(domainPrefix);
+    const isSpecial = this.isSpecialDomain(domainPrefix);
+
+    // 生成环境配置
+    const environments = {
       prod: {
-        name: 'FSD生产环境',
-        baseUrl: 'https://fsd.sankuai.com'
+        name: `${domainPrefix.toUpperCase()}生产环境`,
+        baseUrl: domainConfig.prod
       },
       st: {
-        name: 'FSD预发环境',
-        baseUrl: 'https://fsd.waimai.st.sankuai.com'
+        name: `${domainPrefix.toUpperCase()}预发环境`,
+        baseUrl: domainConfig.st
       },
       test: {
-        name: 'FSD测试环境',
-        baseUrl: 'https://fsd.waimai.test.sankuai.com'
+        name: `${domainPrefix.toUpperCase()}测试环境`,
+        baseUrl: domainConfig.test
       }
     };
 
-    // 添加FSD环境说明
+    // 添加环境说明
     const description = document.createElement('div');
     description.className = 'fsd-env-description';
     description.innerHTML = `
       <div class="fsd-env-info">
-        <span>检测到FSD工作台，已为您生成环境切换选项</span>
+        <span>检测到${domainPrefix.toUpperCase()}系统，已为您生成环境切换选项</span>
+        ${isSpecial ? `<br><small style="color: #666;">使用特殊域名配置</small>` : ''}
       </div>
     `;
     container.appendChild(description);
 
-    // 渲染FSD环境按钮
-    Object.entries(fsdEnvironments).forEach(([key, env]) => {
+    // 渲染环境按钮
+    Object.entries(environments).forEach(([key, env]) => {
       const button = this.createFSDEnvironmentButton(key, env);
       container.appendChild(button);
     });
   }
 
-  // 创建FSD环境按钮
+  // 创建环境按钮
   createFSDEnvironmentButton(key, env) {
     const button = document.createElement('button');
-    button.className = 'env-btn fsd-env-btn';
+    button.className = 'env-btn smart-env-btn';
     button.dataset.env = key;
 
     // 检查是否为当前环境
-    const isCurrentEnv = this.isCurrentFSDEnvironment(key);
+    const isCurrentEnv = this.isCurrentEnvironment(key);
     if (isCurrentEnv) {
       button.classList.add('active');
     }
@@ -151,32 +160,35 @@ class EnvironmentSwitcher {
     return button;
   }
 
-  // 检查是否为当前FSD环境
-  isCurrentFSDEnvironment(targetEnv) {
+  // 检查是否为当前环境
+  isCurrentEnvironment(targetEnv) {
     if (!this.currentTab?.url) return false;
     
     const currentUrl = new URL(this.currentTab.url);
     const currentHostname = currentUrl.hostname;
     
-    const fsdEnvironments = {
-      prod: 'fsd.sankuai.com',
-      st: 'fsd.waimai.st.sankuai.com',
-      test: 'fsd.waimai.test.sankuai.com'
-    };
+    // 获取当前环境类型
+    const currentEnv = this.getCurrentFSDEnvironment();
+    if (!currentEnv) return false;
     
-    return currentHostname === fsdEnvironments[targetEnv];
+    return currentEnv === targetEnv;
   }
 
-  // 获取当前FSD环境类型
+  // 获取当前环境类型
   getCurrentFSDEnvironment() {
     if (!this.currentTab?.url) return null;
     
     const currentUrl = new URL(this.currentTab.url);
     const currentHostname = currentUrl.hostname;
     
-    if (currentHostname === 'fsd.sankuai.com') return 'prod';
-    if (currentHostname === 'fsd.waimai.st.sankuai.com') return 'st';
-    if (currentHostname === 'fsd.waimai.test.sankuai.com') return 'test';
+    // 智能检测环境类型
+    if (currentHostname.includes('.waimai.st.sankuai.com')) {
+      return 'st'; // 预发环境
+    } else if (currentHostname.includes('.waimai.test.sankuai.com')) {
+      return 'test'; // 测试环境
+    } else if (currentHostname.endsWith('.sankuai.com') && !currentHostname.includes('.waimai.')) {
+      return 'prod'; // 生产环境（不包含waimai的sankuai.com域名）
+    }
     
     return null;
   }
@@ -241,7 +253,7 @@ class EnvironmentSwitcher {
     }
   }
 
-  // 切换到FSD环境
+  // 切换到环境
   async switchToFSDEnvironment(targetEnv) {
     if (!this.currentTab?.url) {
       this.showMessage('无法获取当前页面信息', 'error');
@@ -251,18 +263,20 @@ class EnvironmentSwitcher {
     this.showLoading(true);
 
     try {
-      const fsdEnvironments = {
-        prod: 'https://fsd.sankuai.com',
-        st: 'https://fsd.waimai.st.sankuai.com',
-        test: 'https://fsd.waimai.test.sankuai.com'
-      };
-
-      const targetBaseUrl = fsdEnvironments[targetEnv];
-      if (!targetBaseUrl) {
-        throw new Error('无效的FSD环境');
+      const domainPrefix = this.getDomainPrefix();
+      if (!domainPrefix) {
+        throw new Error('无法识别当前域名');
       }
 
-      // 构建新的FSD URL
+      // 获取域名配置（自动处理特殊和标准域名）
+      const domainConfig = this.getDomainConfig(domainPrefix);
+      const targetBaseUrl = domainConfig[targetEnv];
+
+      if (!targetBaseUrl) {
+        throw new Error('无效的环境');
+      }
+
+      // 构建新的URL
       const currentUrl = new URL(this.currentTab.url);
       const newUrl = targetBaseUrl + currentUrl.pathname + currentUrl.search + currentUrl.hash;
 
@@ -272,7 +286,13 @@ class EnvironmentSwitcher {
         targetUrl: newUrl
       });
 
-      this.showMessage(`已切换到${targetEnv === 'prod' ? '生产' : targetEnv === 'st' ? '预发' : '测试'}环境`, 'success');
+      const envNames = {
+        prod: '生产',
+        st: '预发',
+        test: '测试'
+      };
+
+      this.showMessage(`已切换到${envNames[targetEnv]}环境`, 'success');
       
       // 延迟关闭弹窗
       setTimeout(() => {
@@ -280,8 +300,8 @@ class EnvironmentSwitcher {
       }, 1000);
 
     } catch (error) {
-      console.error('FSD环境切换失败:', error);
-      this.showMessage('FSD环境切换失败', 'error');
+      console.error('环境切换失败:', error);
+      this.showMessage('环境切换失败', 'error');
     } finally {
       this.showLoading(false);
     }
@@ -298,19 +318,21 @@ class EnvironmentSwitcher {
     }
 
     if (currentEnvElement) {
-      // 检查是否是FSD页面
+      // 检查是否是支持环境切换的页面
       if (this.isFSDPage()) {
         const currentFSDEnv = this.getCurrentFSDEnvironment();
-        if (currentFSDEnv) {
-          const fsdEnvNames = {
-            prod: 'FSD生产环境',
-            st: 'FSD预发环境',
-            test: 'FSD测试环境'
+        const domainPrefix = this.getDomainPrefix();
+        
+        if (currentFSDEnv && domainPrefix) {
+          const envNames = {
+            prod: `${domainPrefix.toUpperCase()}生产环境`,
+            st: `${domainPrefix.toUpperCase()}预发环境`,
+            test: `${domainPrefix.toUpperCase()}测试环境`
           };
-          currentEnvElement.textContent = `当前环境: ${fsdEnvNames[currentFSDEnv]}`;
+          currentEnvElement.textContent = `当前环境: ${envNames[currentFSDEnv]}`;
           currentEnvElement.className = `current-env ${currentFSDEnv}`;
         } else {
-          currentEnvElement.textContent = 'FSD环境';
+          currentEnvElement.textContent = `${domainPrefix ? domainPrefix.toUpperCase() : '系统'}环境`;
           currentEnvElement.className = 'current-env fsd';
         }
       } else {
@@ -363,53 +385,147 @@ class EnvironmentSwitcher {
     }
   }
 
-  // 检查是否是FSD页面
+  // 检查是否是支持环境切换的页面
   isFSDPage() {
     if (!this.currentTab?.url) return false;
     
     const url = new URL(this.currentTab.url);
     const hostname = url.hostname;
-    const pathname = url.pathname;
     
-    // 检测是否是FSD相关域名且路径包含workbench
-    return (hostname.includes('fsd') && 
-            (hostname.includes('sankuai.com') || hostname.includes('waimai')) && 
-            pathname.includes('/workbench'));
+    // 检测是否是支持环境切换的域名
+    // 支持任何以 .sankuai.com 结尾的域名
+    // 包括特殊域名如 bots.sankuai.com
+    return hostname.endsWith('.sankuai.com');
   }
 
-  // 渲染FSD环境配置
+  // 特殊域名映射配置
+  getSpecialDomainConfig() {
+    return {
+      'xgpt': {
+        prod: 'https://bots.sankuai.com',
+        st: 'https://xgpt.waimai.st.sankuai.com',
+        test: 'https://xgpt.waimai.test.sankuai.com'
+      },
+      'fst': {
+        prod: 'https://fst.sankuai.com',
+        st: 'https://fst.waimai.st.sankuai.com',
+        test: 'https://fst.waimai.test.sankuai.com'
+      },
+      'fsd': {
+        prod: 'https://fsd.sankuai.com',
+        st: 'https://fsd.waimai.st.sankuai.com',
+        test: 'https://fsd.waimai.test.sankuai.com'
+      }
+      // 可以在这里添加更多特殊域名配置
+      // 'other': {
+      //   prod: 'https://other-prod.sankuai.com',
+      //   st: 'https://other.waimai.st.sankuai.com',
+      //   test: 'https://other.waimai.test.sankuai.com'
+      // }
+    };
+  }
+
+  // 获取域名前缀（如 fsd, sy, xgpt等）
+  getDomainPrefix() {
+    if (!this.currentTab?.url) return null;
+    
+    const url = new URL(this.currentTab.url);
+    const hostname = url.hostname;
+    
+    // 智能提取域名前缀
+    // 支持格式：
+    // - prefix.sankuai.com (生产环境)
+    // - prefix.waimai.env.sankuai.com (预发/测试环境)
+    // - 特殊域名如 bots.sankuai.com (XGPT生产环境)
+    
+    // 特殊处理：bots.sankuai.com 识别为 XGPT 系统
+    if (hostname === 'bots.sankuai.com') {
+      return 'xgpt';
+    }
+    
+    if (hostname.includes('.waimai.')) {
+      // 环境域名格式：prefix.waimai.env.sankuai.com
+      const parts = hostname.split('.');
+      if (parts.length >= 4 && parts[1] === 'waimai') {
+        return parts[0]; // 返回第一部分作为前缀
+      }
+    } else if (hostname.endsWith('.sankuai.com')) {
+      // 生产域名格式：prefix.sankuai.com
+      const parts = hostname.split('.');
+      if (parts.length >= 2) {
+        return parts[0]; // 返回第一部分作为前缀
+      }
+    }
+    
+    return null;
+  }
+
+  // 检查是否为特殊域名
+  isSpecialDomain(domainPrefix) {
+    const specialConfig = this.getSpecialDomainConfig();
+    return specialConfig.hasOwnProperty(domainPrefix);
+  }
+
+  // 生成标准域名配置
+  generateStandardDomainConfig(domainPrefix) {
+    return {
+      prod: `https://${domainPrefix}.sankuai.com`,
+      st: `https://${domainPrefix}.waimai.st.sankuai.com`,
+      test: `https://${domainPrefix}.waimai.test.sankuai.com`
+    };
+  }
+
+  // 获取域名配置（优先使用特殊配置，否则生成标准配置）
+  getDomainConfig(domainPrefix) {
+    if (this.isSpecialDomain(domainPrefix)) {
+      return this.getSpecialDomainConfig()[domainPrefix];
+    } else {
+      return this.generateStandardDomainConfig(domainPrefix);
+    }
+  }
+
+  // 渲染环境配置
   renderFSDEnvironmentConfig(container) {
-    const fsdEnvironments = {
+    const domainPrefix = this.getDomainPrefix();
+    if (!domainPrefix) return;
+
+    // 获取域名配置（自动处理特殊和标准域名）
+    const domainConfig = this.getDomainConfig(domainPrefix);
+    const isSpecial = this.isSpecialDomain(domainPrefix);
+
+    // 生成环境配置
+    const environments = {
       prod: {
-        name: 'FSD生产环境',
+        name: `${domainPrefix.toUpperCase()}生产环境`,
         pattern: 'prod',
-        baseUrl: 'https://fsd.sankuai.com'
+        baseUrl: domainConfig.prod
       },
       st: {
-        name: 'FSD预发环境',
+        name: `${domainPrefix.toUpperCase()}预发环境`,
         pattern: 'st',
-        baseUrl: 'https://fsd.waimai.st.sankuai.com'
+        baseUrl: domainConfig.st
       },
       test: {
-        name: 'FSD测试环境',
+        name: `${domainPrefix.toUpperCase()}测试环境`,
         pattern: 'test',
-        baseUrl: 'https://fsd.waimai.test.sankuai.com'
+        baseUrl: domainConfig.test
       }
     };
 
-    // 添加FSD环境配置说明
+    // 添加环境配置说明
     const description = document.createElement('div');
     description.className = 'fsd-description';
     description.innerHTML = `
       <div class="fsd-info">
-        <h3>FSD环境配置</h3>
-        <p>检测到您正在访问FSD工作台，已为您生成对应的环境切换配置</p>
+        <h3>${domainPrefix.toUpperCase()}环境配置</h3>
+        <p>检测到您正在访问${domainPrefix.toUpperCase()}系统，已为您生成对应的环境切换配置</p>
+        ${isSpecial ? `<p style="color: #666; font-size: 12px;">⚠️ 使用特殊域名配置</p>` : ''}
       </div>
     `;
     container.appendChild(description);
 
-    // 渲染FSD环境配置项
-    Object.entries(fsdEnvironments).forEach(([key, env]) => {
+    // 渲染环境配置项
+    Object.entries(environments).forEach(([key, env]) => {
       const configItem = this.createFSDEnvironmentConfigItem(key, env);
       container.appendChild(configItem);
     });

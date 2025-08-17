@@ -188,7 +188,7 @@ body {
   background: #ffc107;
 }
 
-.env-indicator.staging {
+.env-indicator.staging, .env-indicator.st {
   background: #fd7e14;
 }
 
@@ -212,25 +212,25 @@ body {
   font-weight: 500;
 }
 
-.env-btn.fsd-env-btn {
+.env-btn.smart-env-btn {
   background: #f3e5f5;
   border-color: #9c27b0;
 }
 
-.env-btn.fsd-env-btn:hover {
+.env-btn.smart-env-btn:hover {
   background: #e1bee7;
   border-color: #7b1fa2;
   transform: translateY(-1px);
   box-shadow: 0 2px 8px rgba(156, 39, 176, 0.2);
 }
 
-.env-btn.fsd-env-btn.active {
+.env-btn.smart-env-btn.active {
   background: #9c27b0;
   border-color: #7b1fa2;
   color: white;
 }
 
-.env-btn.fsd-env-btn.active .env-url {
+.env-btn.smart-env-btn.active .env-url {
   color: rgba(255, 255, 255, 0.8);
 }
 
