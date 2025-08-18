@@ -37,9 +37,12 @@ const startElementPicker = () => {
   // 创建全屏覆盖层
   createOverlay();
   
+  // 添加智能事件阻止
+  addSmartEventBlocking();
+  
   // 添加事件监听器
   document.addEventListener('mousemove', handleMouseMove);
-  document.addEventListener('click', handleElementClick);
+  document.addEventListener('click', handleElementClick, true); // 使用捕获阶段
   document.addEventListener('keydown', handleKeyDown);
   
   // 显示提示信息
@@ -60,11 +63,109 @@ const createOverlay = () => {
     width: 100vw;
     height: 100vh;
     background: transparent;
-    z-index: 999999;
+    z-index: 999997;
     pointer-events: none;
   `;
   
   document.body.appendChild(overlayElement);
+};
+
+// 添加智能事件阻止
+const addSmartEventBlocking = () => {
+  // 阻止链接的默认行为
+  const links = document.querySelectorAll('a[href]');
+  links.forEach(link => {
+    // 保存原始事件处理器
+    if (!link._originalClickHandlers) {
+      link._originalClickHandlers = [];
+    }
+    
+    // 添加阻止处理器
+    const preventHandler = (e) => {
+      if (elementPickerActive) {
+        e.preventDefault();
+        e.stopPropagation();
+        return false;
+      }
+    };
+    
+    link.addEventListener('click', preventHandler, true);
+    link._originalClickHandlers.push(preventHandler);
+  });
+  
+  // 阻止表单提交
+  const forms = document.querySelectorAll('form');
+  forms.forEach(form => {
+    if (!form._originalSubmitHandlers) {
+      form._originalSubmitHandlers = [];
+    }
+    
+    const preventHandler = (e) => {
+      if (elementPickerActive) {
+        e.preventDefault();
+        e.stopPropagation();
+        return false;
+      }
+    };
+    
+    form.addEventListener('submit', preventHandler, true);
+    form._originalSubmitHandlers.push(preventHandler);
+  });
+  
+  // 阻止按钮点击
+  const buttons = document.querySelectorAll('button, input[type="submit"], input[type="button"]');
+  buttons.forEach(button => {
+    if (!button._originalClickHandlers) {
+      button._originalClickHandlers = [];
+    }
+    
+    const preventHandler = (e) => {
+      if (elementPickerActive) {
+        e.preventDefault();
+        e.stopPropagation();
+        return false;
+      }
+    };
+    
+    button.addEventListener('click', preventHandler, true);
+    button._originalClickHandlers.push(preventHandler);
+  });
+};
+
+// 移除智能事件阻止
+const removeSmartEventBlocking = () => {
+  // 移除链接的事件阻止
+  const links = document.querySelectorAll('a[href]');
+  links.forEach(link => {
+    if (link._originalClickHandlers) {
+      link._originalClickHandlers.forEach(handler => {
+        link.removeEventListener('click', handler, true);
+      });
+      delete link._originalClickHandlers;
+    }
+  });
+  
+  // 移除表单的事件阻止
+  const forms = document.querySelectorAll('form');
+  forms.forEach(form => {
+    if (form._originalSubmitHandlers) {
+      form._originalSubmitHandlers.forEach(handler => {
+        form.removeEventListener('submit', handler, true);
+      });
+      delete form._originalSubmitHandlers;
+    }
+  });
+  
+  // 移除按钮的事件阻止
+  const buttons = document.querySelectorAll('button, input[type="submit"], input[type="button"]');
+  buttons.forEach(button => {
+    if (button._originalClickHandlers) {
+      button._originalClickHandlers.forEach(handler => {
+        button.removeEventListener('click', handler, true);
+      });
+      delete button._originalClickHandlers;
+    }
+  });
 };
 
 // 处理鼠标移动
@@ -220,14 +321,30 @@ const removeHighlight = (element) => {
 const handleElementClick = (event) => {
   if (!elementPickerActive) return;
   
+  const target = event.target;
+  
+  // 跳过覆盖层和结果面板
+  if (target === overlayElement || target === resultPanel || 
+      target.id === 'element-highlight-box' || 
+      target.id === 'element-info-tooltip') {
+    return;
+  }
+  
+  // 完全阻止事件传播和默认行为
   event.preventDefault();
   event.stopPropagation();
+  event.stopImmediatePropagation();
   
-  const target = event.target;
-  if (target === overlayElement || target === resultPanel) return;
+  // 阻止事件冒泡到父元素
+  if (event.cancelBubble !== undefined) {
+    event.cancelBubble = true;
+  }
   
   // 选择元素并显示结果
   selectElement(target);
+  
+  // 阻止后续的点击事件
+  return false;
 };
 
 // 处理键盘事件
@@ -561,7 +678,7 @@ const stopElementPicker = () => {
   
   // 移除事件监听器
   document.removeEventListener('mousemove', handleMouseMove);
-  document.removeEventListener('click', handleElementClick);
+  document.removeEventListener('click', handleElementClick, true);
   document.removeEventListener('keydown', handleKeyDown);
   
   // 移除高亮
@@ -595,6 +712,9 @@ const stopElementPicker = () => {
   
   // 恢复鼠标样式
   document.body.style.cursor = '';
+  
+  // 移除智能事件阻止
+  removeSmartEventBlocking();
 };
 
 // 显示提示消息
