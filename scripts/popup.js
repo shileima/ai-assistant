@@ -58,8 +58,7 @@ class EnvironmentSwitcher {
           setTimeout(() => window.close(), 300);
         }
       } catch (error) {
-        console.error('启动元素选择器失败:', error);
-        this.showMessage('启动失败，请刷新页面后重试', 'error');
+        this.showMessage('启动失败，请刷新页面后重试', error);
       }
     });
 

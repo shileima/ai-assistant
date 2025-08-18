@@ -5,6 +5,7 @@ let elementPickerActive = false;
 let currentHighlightedElement = null;
 let overlayElement = null;
 let resultPanel = null;
+let highlightThrottleTimer = null;
 
 // 监听来自popup的消息
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
@@ -70,72 +71,148 @@ const createOverlay = () => {
 const handleMouseMove = (event) => {
   if (!elementPickerActive) return;
   
-  const target = event.target;
-  if (target === overlayElement || target === resultPanel) return;
-  
-  // 移除之前的高亮
-  if (currentHighlightedElement) {
-    removeHighlight(currentHighlightedElement);
+  // 节流处理，避免过于频繁的高亮更新
+  if (highlightThrottleTimer) {
+    clearTimeout(highlightThrottleTimer);
   }
   
-  // 高亮当前元素
-  currentHighlightedElement = target;
-  highlightElement(target);
-  
-  // 更新提示信息
-  updatePickerInstructions(target);
+  highlightThrottleTimer = setTimeout(() => {
+    const target = event.target;
+    if (target === overlayElement || target === resultPanel || 
+        target.id === 'element-highlight-box' || 
+        target.id === 'element-info-tooltip') {
+      return;
+    }
+    
+    // 如果目标元素没有变化，不重复高亮
+    if (currentHighlightedElement === target) {
+      return;
+    }
+    
+    // 移除之前的高亮
+    if (currentHighlightedElement) {
+      removeHighlight(currentHighlightedElement);
+    }
+    
+    // 高亮当前元素
+    currentHighlightedElement = target;
+    highlightElement(target);
+    
+    // 更新提示信息
+    updatePickerInstructions(target);
+  }, 16); // 约60fps的更新频率
 };
 
 // 高亮元素
 const highlightElement = (element) => {
   if (!element) return;
   
-  // 保存原始样式
-  element._originalOutline = element.style.outline;
-  element._originalBackground = element.style.backgroundColor;
+  // 移除之前的高亮框
+  const existingHighlightBox = document.getElementById('element-highlight-box');
+  if (existingHighlightBox) {
+    existingHighlightBox.remove();
+  }
   
-  // 应用高亮样式
-  element.style.outline = '2px solid #007bff';
-  element.style.outlineOffset = '2px';
-  element.style.backgroundColor = 'rgba(0, 123, 255, 0.1)';
-  
-  // 创建高亮框
+  // 创建精确的高亮框
   const highlightBox = document.createElement('div');
   highlightBox.id = 'element-highlight-box';
+  
+  // 获取元素的精确位置和尺寸
+  const rect = element.getBoundingClientRect();
+  const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
+  const scrollLeft = window.pageXOffset || document.documentElement.scrollLeft;
+  
+  // 计算绝对位置（考虑滚动）
+  const absoluteTop = rect.top + scrollTop;
+  const absoluteLeft = rect.left + scrollLeft;
+  
   highlightBox.style.cssText = `
     position: absolute;
-    border: 2px solid #007bff;
-    background: rgba(0, 123, 255, 0.1);
+    top: ${absoluteTop}px;
+    left: ${absoluteLeft}px;
+    width: ${rect.width}px;
+    height: ${rect.height}px;
+    border: 3px solid #007bff;
+    background: rgba(0, 123, 255, 0.08);
     pointer-events: none;
     z-index: 999998;
-    border-radius: 4px;
+    border-radius: 2px;
+    box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.8), 0 0 8px rgba(0, 123, 255, 0.3);
+    transition: all 0.1s ease;
   `;
   
-  const rect = element.getBoundingClientRect();
-  highlightBox.style.left = rect.left + 'px';
-  highlightBox.style.top = rect.top + 'px';
-  highlightBox.style.width = rect.width + 'px';
-  highlightBox.style.height = rect.height + 'px';
-  
   document.body.appendChild(highlightBox);
+  
+  // 添加元素信息提示
+  showElementInfo(element, rect);
+};
+
+// 显示元素信息提示
+const showElementInfo = (element, rect) => {
+  // 移除已存在的提示
+  const existingInfo = document.getElementById('element-info-tooltip');
+  if (existingInfo) {
+    existingInfo.remove();
+  }
+  
+  // 创建信息提示
+  const tooltip = document.createElement('div');
+  tooltip.id = 'element-info-tooltip';
+  
+  const tagName = element.tagName.toLowerCase();
+  const className = element.className || '';
+  const id = element.id || '';
+  const text = element.textContent?.trim() || element.value || '';
+  
+  tooltip.style.cssText = `
+    position: fixed;
+    top: ${rect.bottom + 10}px;
+    left: ${rect.left}px;
+    background: #333;
+    color: white;
+    padding: 8px 12px;
+    border-radius: 4px;
+    font-size: 12px;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    z-index: 999999;
+    pointer-events: none;
+    white-space: nowrap;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+  `;
+  
+  tooltip.innerHTML = `
+    <div><strong>标签:</strong> ${tagName}</div>
+    ${className ? `<div><strong>类名:</strong> ${className}</div>` : ''}
+    ${id ? `<div><strong>ID:</strong> ${id}</div>` : ''}
+    ${text ? `<div><strong>文本:</strong> ${text.substring(0, 50)}${text.length > 50 ? '...' : ''}</div>` : ''}
+  `;
+  
+  document.body.appendChild(tooltip);
+  
+  // 确保提示框在可视区域内
+  const tooltipRect = tooltip.getBoundingClientRect();
+  if (tooltipRect.right > window.innerWidth) {
+    tooltip.style.left = (window.innerWidth - tooltipRect.width - 10) + 'px';
+  }
+  if (tooltipRect.bottom > window.innerHeight) {
+    tooltip.style.top = (rect.top - tooltipRect.height - 10) + 'px';
+  }
 };
 
 // 移除高亮
 const removeHighlight = (element) => {
   if (!element) return;
   
-  // 恢复原始样式
-  if (element._originalOutline !== undefined) {
-    element.style.outline = element._originalOutline;
-    element.style.backgroundColor = element._originalBackground;
-    delete element._originalOutline;
-    delete element._originalBackground;
-  }
-  
   // 移除高亮框
   const highlightBox = document.getElementById('element-highlight-box');
   if (highlightBox) {
     highlightBox.remove();
+  }
+  
+  // 移除信息提示
+  const tooltip = document.getElementById('element-info-tooltip');
+  if (tooltip) {
+    tooltip.remove();
   }
 };
 
@@ -476,6 +553,12 @@ const stopElementPicker = () => {
   
   elementPickerActive = false;
   
+  // 清理节流定时器
+  if (highlightThrottleTimer) {
+    clearTimeout(highlightThrottleTimer);
+    highlightThrottleTimer = null;
+  }
+  
   // 移除事件监听器
   document.removeEventListener('mousemove', handleMouseMove);
   document.removeEventListener('click', handleElementClick);
@@ -485,6 +568,17 @@ const stopElementPicker = () => {
   if (currentHighlightedElement) {
     removeHighlight(currentHighlightedElement);
     currentHighlightedElement = null;
+  }
+  
+  // 确保清理所有可能残留的高亮元素
+  const highlightBox = document.getElementById('element-highlight-box');
+  if (highlightBox) {
+    highlightBox.remove();
+  }
+  
+  const tooltip = document.getElementById('element-info-tooltip');
+  if (tooltip) {
+    tooltip.remove();
   }
   
   // 移除覆盖层
