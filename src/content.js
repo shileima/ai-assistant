@@ -20,6 +20,10 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     // 启动元素选择器
     startElementPicker();
     sendResponse({ success: true });
+  } else if (request.action === 'showSaveElementDialog') {
+    // 显示保存元素弹框
+    showSaveElementDialog(request.elementData);
+    sendResponse({ success: true });
   }
 });
 
@@ -611,6 +615,307 @@ const saveElement = async (element) => {
   } catch (error) {
     showToast('保存失败: ' + error.message);
   }
+};
+
+// 显示保存元素弹框
+const showSaveElementDialog = (elementData) => {
+  // 移除已存在的弹框
+  const existingDialog = document.getElementById('save-element-dialog');
+  if (existingDialog) {
+    existingDialog.remove();
+  }
+
+  // 创建弹框容器
+  const dialog = document.createElement('div');
+  dialog.id = 'save-element-dialog';
+  dialog.style.cssText = `
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: 999999;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  `;
+
+  // 创建弹框内容
+  const dialogContent = document.createElement('div');
+  dialogContent.style.cssText = `
+    background: white;
+    border-radius: 8px;
+    padding: 24px;
+    width: 500px;
+    max-width: 90vw;
+    max-height: 90vh;
+    overflow-y: auto;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+  `;
+
+  // 弹框标题
+  const title = document.createElement('h3');
+  title.textContent = '保存元素';
+  title.style.cssText = `
+    margin: 0 0 20px 0;
+    font-size: 18px;
+    font-weight: 600;
+    color: #333;
+  `;
+
+  // 保存类型选择
+  const typeSection = document.createElement('div');
+  typeSection.style.cssText = 'margin-bottom: 20px;';
+  
+  const typeLabel = document.createElement('label');
+  typeLabel.textContent = '保存类型：';
+  typeLabel.style.cssText = `
+    display: block;
+    margin-bottom: 8px;
+    font-weight: 500;
+    color: #555;
+  `;
+  
+  const typeSelect = document.createElement('select');
+  typeSelect.id = 'locate-mode-select';
+  typeSelect.style.cssText = `
+    width: 100%;
+    padding: 8px 12px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    font-size: 14px;
+  `;
+  
+  const cssOption = document.createElement('option');
+  cssOption.value = 'CSS';
+  cssOption.textContent = 'CSS选择器';
+  
+  const xpathOption = document.createElement('option');
+  xpathOption.value = 'Xpath';
+  xpathOption.textContent = 'XPath';
+  
+  typeSelect.appendChild(cssOption);
+  typeSelect.appendChild(xpathOption);
+  
+  typeSection.appendChild(typeLabel);
+  typeSection.appendChild(typeSelect);
+
+  // 元素名称输入
+  const nameSection = document.createElement('div');
+  nameSection.style.cssText = 'margin-bottom: 20px;';
+  
+  const nameLabel = document.createElement('label');
+  nameLabel.textContent = '元素名称：';
+  nameLabel.style.cssText = `
+    display: block;
+    margin-bottom: 8px;
+    font-weight: 500;
+    color: #555;
+  `;
+  
+  const nameInput = document.createElement('input');
+  nameInput.id = 'element-name-input';
+  nameInput.type = 'text';
+  nameInput.style.cssText = `
+    width: 100%;
+    padding: 8px 12px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    font-size: 14px;
+    box-sizing: border-box;
+  `;
+  
+  // 自动生成元素名称
+  const generateElementName = () => {
+    const selectedType = typeSelect.value;
+    const text = elementData.text || '';
+    const tagName = elementData.tagName || '';
+    return `新建元素-${text}-${tagName}-${selectedType}`;
+  };
+  
+  nameInput.value = generateElementName();
+  
+  // 当类型改变时更新名称
+  typeSelect.addEventListener('change', () => {
+    nameInput.value = generateElementName();
+  });
+  
+  nameSection.appendChild(nameLabel);
+  nameSection.appendChild(nameInput);
+
+  // 元素内容显示
+  const contentSection = document.createElement('div');
+  contentSection.style.cssText = 'margin-bottom: 20px;';
+  
+  const contentLabel = document.createElement('label');
+  contentLabel.textContent = '元素内容：';
+  contentLabel.style.cssText = `
+    display: block;
+    margin-bottom: 8px;
+    font-weight: 500;
+    color: #555;
+  `;
+  
+  const contentTextarea = document.createElement('textarea');
+  contentTextarea.id = 'element-content-textarea';
+  contentTextarea.style.cssText = `
+    width: 100%;
+    height: 80px;
+    padding: 8px 12px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    font-size: 14px;
+    resize: vertical;
+    box-sizing: border-box;
+    font-family: monospace;
+  `;
+  
+  // 根据选择的类型显示不同的内容
+  const updateContent = () => {
+    const selectedType = typeSelect.value;
+    if (selectedType === 'CSS') {
+      contentTextarea.value = elementData.cssSelector || '';
+    } else {
+      contentTextarea.value = elementData.xpath || '';
+    }
+  };
+  
+  updateContent();
+  typeSelect.addEventListener('change', updateContent);
+  
+  contentSection.appendChild(contentLabel);
+  contentSection.appendChild(contentTextarea);
+
+  // 按钮区域
+  const buttonSection = document.createElement('div');
+  buttonSection.style.cssText = `
+    display: flex;
+    gap: 12px;
+    justify-content: flex-end;
+    margin-top: 24px;
+  `;
+  
+  const cancelButton = document.createElement('button');
+  cancelButton.textContent = '取消';
+  cancelButton.style.cssText = `
+    padding: 8px 16px;
+    border: 1px solid #ddd;
+    background: white;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 14px;
+  `;
+  
+  const saveButton = document.createElement('button');
+  saveButton.textContent = '保存提交';
+  saveButton.style.cssText = `
+    padding: 8px 16px;
+    background: #007bff;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 14px;
+  `;
+  
+  // 取消按钮事件
+  cancelButton.addEventListener('click', () => {
+    dialog.remove();
+  });
+  
+  // 保存按钮事件
+  saveButton.addEventListener('click', async () => {
+    console.log('保存按钮被点击');
+    const locateMode = typeSelect.value;
+    const elementName = nameInput.value.trim();
+    const locateModeValue = contentTextarea.value.trim();
+    
+    console.log('保存参数:', { locateMode, elementName, locateModeValue, elementData });
+    
+    if (!elementName) {
+      alert('请输入元素名称');
+      return;
+    }
+    
+    if (!locateModeValue) {
+      alert('请输入元素内容');
+      return;
+    }
+    
+    // 显示加载状态
+    saveButton.textContent = '保存中...';
+    saveButton.disabled = true;
+    
+    try {
+      console.log('准备发送消息到background script');
+      // 通过background script调用API保存元素
+      const response = await new Promise((resolve, reject) => {
+        const message = {
+          action: 'saveElementToAPI',
+          elementData: {
+            ...elementData,
+            locateModeValue: locateModeValue
+          },
+          locateMode: locateMode,
+          elementName: elementName
+        };
+        
+        console.log('发送消息:', message);
+        
+        chrome.runtime.sendMessage(message, (response) => {
+          console.log('收到background script响应:', response);
+          if (chrome.runtime.lastError) {
+            console.error('Chrome runtime错误:', chrome.runtime.lastError);
+            reject(new Error(chrome.runtime.lastError.message));
+          } else {
+            resolve(response);
+          }
+        });
+      });
+      
+      if (response && response.success) {
+        showToast('元素保存成功！');
+        dialog.remove();
+      } else {
+        alert('保存失败: ' + (response ? response.message : '未知错误'));
+      }
+    } catch (error) {
+      console.error('保存失败:', error);
+      alert('保存失败: ' + error.message);
+    } finally {
+      saveButton.textContent = '保存提交';
+      saveButton.disabled = false;
+    }
+  });
+  
+  buttonSection.appendChild(cancelButton);
+  buttonSection.appendChild(saveButton);
+
+  // 组装弹框
+  dialogContent.appendChild(title);
+  dialogContent.appendChild(typeSection);
+  dialogContent.appendChild(nameSection);
+  dialogContent.appendChild(contentSection);
+  dialogContent.appendChild(buttonSection);
+  
+  dialog.appendChild(dialogContent);
+  document.body.appendChild(dialog);
+  
+  // 点击背景关闭弹框
+  dialog.addEventListener('click', (e) => {
+    if (e.target === dialog) {
+      dialog.remove();
+    }
+  });
+  
+  // ESC键关闭弹框
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') {
+      dialog.remove();
+    }
+  });
 };
 
 // 页面加载完成后检测当前环境

@@ -34,6 +34,8 @@ chrome.runtime.onInstalled.addListener(async () => {
 
 // 监听来自popup的消息
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
+  console.log('Background收到消息:', request.action, request);
+  
   if (request.action === 'switchEnvironment') {
     
     handleEnvironmentSwitch(request.targetEnv, request.currentUrl);
@@ -44,6 +46,18 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     return true; // 保持消息通道开放
   } else if (request.action === 'saveElement') {
     handleSaveElement(request, sender, sendResponse);
+    return true; // 保持消息通道开放
+  } else if (request.action === 'saveElementToAPI') {
+    console.log('准备调用saveElementToAPI:', request);
+    saveElementToAPI(request.elementData, request.locateMode, request.elementName)
+      .then(result => {
+        console.log('saveElementToAPI成功:', result);
+        sendResponse(result);
+      })
+      .catch(error => {
+        console.error('saveElementToAPI失败:', error);
+        sendResponse({ success: false, message: error.message });
+      });
     return true; // 保持消息通道开放
   }
 });
@@ -224,15 +238,15 @@ const handleSaveElement = async (request, sender, sendResponse) => {
       tabId: tab.id
     };
 
-    // 这里可以调用实际的API来保存元素
-    // 示例：保存到本地存储或发送到远程服务器
-    const savedElements = await saveElementToStorage(elementData);
+    // 发送消息到content script，触发弹框
+    await chrome.tabs.sendMessage(tab.id, {
+      action: 'showSaveElementDialog',
+      elementData: elementData
+    });
     
     sendResponse({ 
       success: true, 
-      message: '元素保存成功',
-      data: elementData,
-      totalSaved: savedElements.length
+      message: '弹框已触发，请在页面上完成保存操作'
     });
 
   } catch (error) {
@@ -244,34 +258,35 @@ const handleSaveElement = async (request, sender, sendResponse) => {
   }
 };
 
-// 保存元素到存储（这里可以根据需要改为实际的API调用）
-const saveElementToStorage = async (elementData) => {
+// 调用API保存元素
+const saveElementToAPI = async (elementData, locateMode, elementName) => {
   try {
-    // 获取已保存的元素列表
-    const result = await chrome.storage.local.get(['savedElements']);
-    const savedElements = result.savedElements || [];
+    const apiUrl = 'https://digitalgateway.waimai.test.sankuai.com/automan/open/v1/workflowElements/createElement';
     
-    // 添加新元素
-    savedElements.push(elementData);
-    
-    // 限制保存数量，最多保存100个元素
-    if (savedElements.length > 100) {
-      savedElements.splice(0, savedElements.length - 100);
+    const requestBody = {
+      commandId: "841",
+      workflowId: "workflow-255afc81-b",
+      elementName: elementName,
+      locateModeValue: elementData.locateModeValue || elementData.text || elementData.outerHTML || '',
+      locateMode: locateMode
+    };
+
+    const response = await fetch(apiUrl, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(requestBody)
+    });
+
+    if (!response.ok) {
+      throw new Error(`API请求失败: ${response.status} ${response.statusText}`);
     }
-    
-    // 保存到本地存储
-    await chrome.storage.local.set({ savedElements });
-    
-    // 这里可以添加实际的API调用逻辑
-    // 例如：await fetch('https://your-api.com/elements', {
-    //   method: 'POST',
-    //   headers: { 'Content-Type': 'application/json' },
-    //   body: JSON.stringify(elementData)
-    // });
-    
-    return savedElements;
+
+    const result = await response.json();
+    return { success: true, data: result };
   } catch (error) {
-    console.error('保存到存储失败:', error);
+    console.error('API调用失败:', error);
     throw error;
   }
 };

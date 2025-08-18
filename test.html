@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>保存元素测试页面</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .test-section {
+            margin: 20px 0;
+            padding: 20px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+        }
+        .test-button {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        .test-button:hover {
+            background: #0056b3;
+        }
+        .element-info {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 4px;
+            margin: 10px 0;
+        }
+    </style>
+</head>
+<body>
+    <h1>保存元素功能测试页面</h1>
+    
+    <div class="test-section">
+        <h2>测试元素 1</h2>
+        <p>这是一个段落元素，包含一些文本内容。</p>
+        <button class="test-button" onclick="testSaveElement(this)">保存此按钮</button>
+        <div class="element-info">
+            <strong>元素信息：</strong>
+            <ul>
+                <li>标签：button</li>
+                <li>文本：保存此按钮</li>
+                <li>类名：test-button</li>
+            </ul>
+        </div>
+    </div>
+    
+    <div class="test-section">
+        <h2>测试元素 2</h2>
+        <div class="test-button" onclick="testSaveElement(this)" style="display: inline-block;">
+            保存此div
+        </div>
+        <div class="element-info">
+            <strong>元素信息：</strong>
+            <ul>
+                <li>标签：div</li>
+                <li>文本：保存此div</li>
+                <li>类名：test-button</li>
+            </ul>
+        </div>
+    </div>
+    
+    <div class="test-section">
+        <h2>测试元素 3</h2>
+        <input type="text" value="测试输入框" class="test-input" onclick="testSaveElement(this)" readonly>
+        <div class="element-info">
+            <strong>元素信息：</strong>
+            <ul>
+                <li>标签：input</li>
+                <li>值：测试输入框</li>
+                <li>类型：text</li>
+            </ul>
+        </div>
+    </div>
+
+    <script>
+        function testSaveElement(element) {
+            // 模拟扩展的消息传递
+            console.log('测试保存元素:', element);
+            
+            // 构建元素数据
+            const elementData = {
+                tagName: element.tagName.toLowerCase(),
+                className: element.className || '',
+                id: element.id || '',
+                text: element.textContent?.trim() || element.value || '',
+                outerHTML: element.outerHTML,
+                cssSelector: generateCSSSelector(element),
+                xpath: generateXPath(element)
+            };
+            
+            console.log('元素数据:', elementData);
+            
+            // 模拟显示弹框
+            showMockDialog(elementData);
+        }
+        
+        function generateCSSSelector(element) {
+            if (element.id) {
+                return `#${element.id}`;
+            }
+            if (element.className) {
+                return `.${element.className.split(' ').join('.')}`;
+            }
+            return element.tagName.toLowerCase();
+        }
+        
+        function generateXPath(element) {
+            if (element.id) {
+                return `//*[@id="${element.id}"]`;
+            }
+            return `//${element.tagName.toLowerCase()}`;
+        }
+        
+        function showMockDialog(elementData) {
+            // 创建模拟弹框
+            const dialog = document.createElement('div');
+            dialog.style.cssText = `
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 100vw;
+                height: 100vh;
+                background: rgba(0, 0, 0, 0.5);
+                z-index: 999999;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+            `;
+            
+            const content = document.createElement('div');
+            content.style.cssText = `
+                background: white;
+                padding: 20px;
+                border-radius: 8px;
+                max-width: 500px;
+                width: 90%;
+            `;
+            
+            content.innerHTML = `
+                <h3>模拟弹框 - 保存元素</h3>
+                <p><strong>元素类型：</strong>${elementData.tagName}</p>
+                <p><strong>元素文本：</strong>${elementData.text}</p>
+                <p><strong>CSS选择器：</strong>${elementData.cssSelector}</p>
+                <p><strong>XPath：</strong>${elementData.xpath}</p>
+                <p><em>注意：这是模拟弹框，实际功能需要安装扩展后使用</em></p>
+                <button onclick="this.parentElement.parentElement.remove()" style="background: #007bff; color: white; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer;">关闭</button>
+            `;
+            
+            dialog.appendChild(content);
+            document.body.appendChild(dialog);
+            
+            // 点击背景关闭
+            dialog.addEventListener('click', (e) => {
+                if (e.target === dialog) {
+                    dialog.remove();
+                }
+            });
+        }
+        
+        // 页面加载完成后的提示
+        document.addEventListener('DOMContentLoaded', () => {
+            console.log('测试页面加载完成');
+            console.log('请安装扩展后测试实际的保存元素功能');
+        });
+    </script>
+</body>
+</html>
